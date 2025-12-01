@@ -1,0 +1,13 @@
+[package]
+name = "aoc2025"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aocf = { version = "0.1.21", features = ["html_parsing"] }
+failure = "0.1.8"
+itertools = "0.14.0"
+nom = "8.0.0"
+num = "0.4.3"
+priority-queue = "2.7.0"
+structopt = "0.3.26"
