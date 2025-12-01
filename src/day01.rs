@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use failure::Error;
 use parse::parse_input;
 
@@ -54,16 +56,41 @@ pub struct Rotation {
 }
 
 impl Rotation {
-    fn apply(&self, pos: u64) -> u64 {
+    fn apply(&self, mut pos: u64) -> (u64, usize) {
+        let mut zeroes = 0;
         match self.direction {
             Direction::Left => {
-                let mut pos = pos;
                 while pos < self.clicks {
-                    pos += 100
+                    if pos != 0 {
+                        zeroes += 1;
+                    }
+                    pos += 100;
                 }
-                pos - self.clicks
+
+                pos -= self.clicks;
+
+                if pos == 0 {
+                    zeroes += 1
+                }
             }
-            Direction::Right => (pos + self.clicks) % 100,
+            Direction::Right => {
+                pos += self.clicks;
+                while pos >= 100 {
+                    pos -= 100;
+                    zeroes += 1;
+                }
+            }
+        }
+
+        (pos, zeroes)
+    }
+}
+
+impl Display for Rotation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.direction {
+            Direction::Left => write!(f, "L{}", self.clicks),
+            Direction::Right => write!(f, "R{}", self.clicks),
         }
     }
 }
@@ -72,11 +99,22 @@ fn count_zeroes(rotations: &[Rotation]) -> usize {
     rotations
         .iter()
         .scan(50, |current, rotation| {
-            *current = rotation.apply(*current);
+            *current = rotation.apply(*current).0;
             Some(*current)
         })
         .filter(|pos| *pos == 0)
         .map(|_| 1)
+        .sum()
+}
+
+fn count_total_zeroes(rotations: &[Rotation]) -> usize {
+    rotations
+        .iter()
+        .scan(50, |current, rotation| {
+            let (new, zeroes) = rotation.apply(*current);
+            *current = new;
+            Some(zeroes)
+        })
         .sum()
 }
 
@@ -91,7 +129,8 @@ impl super::Solver for Solver {
 
     fn solve(rotations: Self::Problem) -> (Option<String>, Option<String>) {
         let part1 = count_zeroes(&rotations);
+        let part2 = count_total_zeroes(&rotations);
 
-        (Some(part1.to_string()), None)
+        (Some(part1.to_string()), Some(part2.to_string()))
     }
 }
