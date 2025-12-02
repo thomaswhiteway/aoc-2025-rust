@@ -7,6 +7,7 @@ use std::str::FromStr;
 mod a_star;
 mod common;
 mod day01;
+mod day02;
 mod djikstra;
 mod parsers;
 
@@ -83,6 +84,7 @@ pub fn solve<S: Solver>(data: String, aoc: &mut Aoc, submit: Option<Part>) -> Re
 pub fn solve_day(day: u32, data: String, aoc: &mut Aoc, submit: Option<Part>) -> Result<(), Error> {
     match day {
         1 => solve::<day01::Solver>(data, aoc, submit),
+        2 => solve::<day02::Solver>(data, aoc, submit),
         _ => Err(failure::err_msg(format!("Invalid day {}", day))),
     }
 }
