@@ -2,11 +2,30 @@ use crate::common::Position;
 use failure::Error;
 use std::collections::HashSet;
 
-fn find_reachable_rolls(rolls: &HashSet<Position>) -> usize {
+fn find_reachable_rolls(rolls: &HashSet<Position>) -> HashSet<Position> {
     rolls
         .iter()
         .filter(|pos| pos.surrounding().filter(|adj| rolls.contains(adj)).count() < 4)
-        .count()
+        .cloned()
+        .collect()
+}
+
+fn find_removable_rolls(rolls: &HashSet<Position>) -> HashSet<Position> {
+    let mut rolls = rolls.clone();
+    let mut removed = HashSet::new();
+
+    loop {
+        let reachable = find_reachable_rolls(&rolls);
+
+        if reachable.is_empty() {
+            break;
+        }
+
+        rolls.retain(|p| !reachable.contains(p));
+        removed.extend(reachable);
+    }
+
+    removed
 }
 
 pub struct Solver {}
@@ -34,7 +53,8 @@ impl super::Solver for Solver {
     }
 
     fn solve(rolls: Self::Problem) -> (Option<String>, Option<String>) {
-        let part1 = find_reachable_rolls(&rolls);
-        (Some(part1.to_string()), None)
+        let part1 = find_reachable_rolls(&rolls).len();
+        let part2 = find_removable_rolls(&rolls).len();
+        (Some(part1.to_string()), Some(part2.to_string()))
     }
 }
