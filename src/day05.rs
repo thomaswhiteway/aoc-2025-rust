@@ -91,10 +91,16 @@ impl FreshnessChecker {
 
         false
     }
+
+    fn total_fresh_ingredients(&self) -> u64 {
+        self.fresh_ranges
+            .iter()
+            .map(|range| *range.end() - range.start() + 1)
+            .sum()
+    }
 }
 
-fn count_fresh_ingredients(fresh_ranges: &[RangeInclusive<u64>], ingredients: &[u64]) -> usize {
-    let checker = FreshnessChecker::new(fresh_ranges);
+fn count_fresh_ingredients(checker: &FreshnessChecker, ingredients: &[u64]) -> usize {
     ingredients
         .iter()
         .filter(|&&ingredient| checker.is_fresh(ingredient))
@@ -111,7 +117,9 @@ impl super::Solver for Solver {
     }
 
     fn solve((fresh_ranges, ingredients): Self::Problem) -> (Option<String>, Option<String>) {
-        let part1 = count_fresh_ingredients(&fresh_ranges, &ingredients);
-        (Some(part1.to_string()), None)
+        let checker = FreshnessChecker::new(&fresh_ranges);
+        let part1 = count_fresh_ingredients(&checker, &ingredients);
+        let part2 = checker.total_fresh_ingredients();
+        (Some(part1.to_string()), Some(part2.to_string()))
     }
 }
