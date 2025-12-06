@@ -1,45 +1,5 @@
 use failure::Error;
 
-mod parse {
-    use failure::Error;
-    use failure::err_msg;
-    use nom::character::complete::space0;
-    use nom::{
-        IResult, Parser,
-        branch::alt,
-        bytes::complete::tag,
-        character::complete::{newline, space1},
-        combinator::{all_consuming, map, value},
-        multi::{many1, separated_list1},
-        sequence::terminated,
-    };
-
-    use crate::{day06::Operation, parsers::unsigned};
-
-    fn operation(input: &str) -> IResult<&str, Operation> {
-        alt((
-            value(Operation::Add, tag("+")),
-            value(Operation::Multiply, tag("*")),
-        ))
-        .parse(input)
-    }
-
-    pub(super) fn parse_input(input: &str) -> Result<(Box<[Box<[u64]>]>, Box<[Operation]>), Error> {
-        let num_row = map(separated_list1(space1, unsigned), Vec::into_boxed_slice);
-        let op_row = map(separated_list1(space1, operation), Vec::into_boxed_slice);
-        all_consuming((
-            map(
-                many1(terminated(num_row, (space0, newline))),
-                Vec::into_boxed_slice,
-            ),
-            terminated(op_row, (space0, newline)),
-        ))
-        .parse(input)
-        .map(|(_, out)| out)
-        .map_err(|err| err_msg(format!("Failed to parse input: {}", err)))
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 pub enum Operation {
     Add,
@@ -55,23 +15,107 @@ impl Operation {
     }
 }
 
-fn calculate_grand_total(numbers: &[Box<[u64]>], operations: &[Operation]) -> u64 {
-    (0..operations.len())
-        .map(|index| operations[index].apply(numbers.iter().map(|row| row[index])))
-        .sum()
+trait NumberParser {
+    fn parse_numbers(digits: &Vec<Vec<Option<u8>>>) -> impl Iterator<Item = u64>;
+}
+
+struct BasicNumberParser {}
+
+impl NumberParser for BasicNumberParser {
+    fn parse_numbers(digits: &Vec<Vec<Option<u8>>>) -> impl Iterator<Item = u64> {
+        digits.iter().map(|row| {
+            row.iter()
+                .rev()
+                .filter_map(|d| *d)
+                .zip(0..)
+                .map(|(d, pos)| d as u64 * 10u64.pow(pos))
+                .sum()
+        })
+    }
+}
+
+struct CorrectNumberParser {}
+
+impl NumberParser for CorrectNumberParser {
+    fn parse_numbers(digits: &Vec<Vec<Option<u8>>>) -> impl Iterator<Item = u64> {
+        (0..digits[0].len()).rev().map(|index| {
+            digits
+                .iter()
+                .rev()
+                .map(|row| row[index])
+                .filter_map(|d| d)
+                .zip(0..)
+                .map(|(d, pos)| d as u64 * 10u64.pow(pos))
+                .sum()
+        })
+    }
+}
+
+pub struct Problem {
+    operation: Operation,
+    digits: Vec<Vec<Option<u8>>>,
+}
+
+impl Problem {
+    fn solve<N: NumberParser>(&self) -> u64 {
+        self.operation.apply(N::parse_numbers(&self.digits))
+    }
+}
+
+fn calculate_grand_total<N: NumberParser>(problems: &[Problem]) -> u64 {
+    problems.iter().map(|problem| problem.solve::<N>()).sum()
 }
 
 pub struct Solver {}
 
 impl super::Solver for Solver {
-    type Problem = (Box<[Box<[u64]>]>, Box<[Operation]>);
+    type Problem = Vec<Problem>;
 
     fn parse_input(data: String) -> Result<Self::Problem, Error> {
-        parse::parse_input(&data)
+        let mut lines: Vec<_> = data
+            .lines()
+            .map(|line| line.chars().collect::<Vec<_>>())
+            .collect();
+        let mut operations: Vec<_> = lines
+            .pop()
+            .unwrap()
+            .into_iter()
+            .rev()
+            .filter_map(|c| match c {
+                '+' => Some(Operation::Add),
+                '*' => Some(Operation::Multiply),
+                _ => None,
+            })
+            .collect();
+
+        let mut problems = vec![];
+        let mut digits = (0..lines.len()).map(|_| vec![]).collect();
+
+        for index in 0..lines[0].len() {
+            if lines.iter().map(|line| line[index]).all(|c| c == ' ') {
+                problems.push(Problem {
+                    operation: operations.pop().unwrap(),
+                    digits: digits,
+                });
+                digits = (0..lines.len()).map(|_| vec![]).collect()
+            } else {
+                for row in 0..digits.len() {
+                    digits[row].push(lines[row][index].to_digit(10).map(|d| d as u8));
+                }
+            }
+        }
+
+        problems.push(Problem {
+            operation: operations.pop().unwrap(),
+            digits: digits,
+        });
+
+        Ok(problems)
     }
 
-    fn solve((numbers, operations): Self::Problem) -> (Option<String>, Option<String>) {
-        let part1 = calculate_grand_total(&numbers, &operations);
-        (Some(part1.to_string()), None)
+    fn solve(problems: Self::Problem) -> (Option<String>, Option<String>) {
+        let part1 = calculate_grand_total::<BasicNumberParser>(&problems);
+        let part2 = calculate_grand_total::<CorrectNumberParser>(&problems);
+        (Some(part1.to_string()), Some(part2.to_string()))
     }
 }
