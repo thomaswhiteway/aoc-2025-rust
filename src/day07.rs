@@ -1,6 +1,6 @@
-use crate::common::Position;
+use crate::common::{Counter, Position};
 use failure::{Error, err_msg};
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 pub struct Grid {
     start: Position,
@@ -8,24 +8,24 @@ pub struct Grid {
 }
 
 impl Grid {
-    fn total_splits(&self) -> usize {
+    fn total_splits(&self) -> (usize, usize) {
         let mut splits = 0;
         let start_row = self.start.y as usize;
-        let mut beams: HashSet<usize> = [self.start.x as usize].into_iter().collect();
+        let mut beams: Counter<usize> = [(self.start.x as usize, 1)].into_iter().collect();
 
         for row in start_row..self.splitters.len() {
-            let (split, not_split): (HashSet<_>, HashSet<_>) = beams
+            let (split, not_split): (HashMap<_, _>, HashMap<_, _>) = beams
                 .into_iter()
-                .partition(|beam| self.splitters[row][*beam]);
+                .partition(|(beam, _)| self.splitters[row][*beam]);
             splits += split.len();
             beams = split
                 .into_iter()
-                .flat_map(|beam| [beam - 1, beam + 1])
+                .flat_map(|(beam, count)| [(beam - 1, count), (beam + 1, count)])
                 .chain(not_split.into_iter())
                 .collect();
         }
 
-        splits
+        (splits, beams.iter().map(|(_, &count)| count).sum())
     }
 }
 
@@ -60,7 +60,7 @@ impl super::Solver for Solver {
     }
 
     fn solve(grid: Self::Problem) -> (Option<String>, Option<String>) {
-        let part1 = grid.total_splits();
-        (Some(part1.to_string()), None)
+        let (part1, part2) = grid.total_splits();
+        (Some(part1.to_string()), Some(part2.to_string()))
     }
 }

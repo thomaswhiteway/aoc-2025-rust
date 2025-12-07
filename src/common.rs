@@ -333,3 +333,37 @@ pub fn find_all_symbols_in_grid(data: &str, symbol: char) -> impl Iterator<Item 
         })
     })
 }
+
+pub struct Counter<T> {
+    counts: HashMap<T, usize>,
+}
+
+impl<T: Hash + Eq> Counter<T> {
+    pub fn new() -> Self {
+        Counter {
+            counts: HashMap::new(),
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&T, &usize)> + '_ {
+        self.counts.iter()
+    }
+}
+
+impl<T: Hash + Eq> FromIterator<(T, usize)> for Counter<T> {
+    fn from_iter<I: IntoIterator<Item = (T, usize)>>(iter: I) -> Self {
+        let mut counts = HashMap::new();
+        for (item, count) in iter {
+            *counts.entry(item).or_default() += count;
+        }
+        Counter { counts }
+    }
+}
+
+impl<T: Hash + Eq> IntoIterator for Counter<T> {
+    type IntoIter = <HashMap<T, usize> as IntoIterator>::IntoIter;
+    type Item = (T, usize);
+    fn into_iter(self) -> Self::IntoIter {
+        self.counts.into_iter()
+    }
+}
