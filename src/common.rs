@@ -42,8 +42,8 @@ impl Position {
             })
     }
 
-    pub fn surrounding(&self) -> impl Iterator<Item = Position> + '_ {
-        iproduct!([-1, 0, 1], [-1, 0, 1]).filter_map(|(dx, dy)| {
+    pub fn surrounding(self) -> impl Iterator<Item = Position> {
+        iproduct!([-1, 0, 1], [-1, 0, 1]).filter_map(move |(dx, dy)| {
             if dx != 0 || dy != 0 {
                 Some(Position {
                     x: self.x + dx,
