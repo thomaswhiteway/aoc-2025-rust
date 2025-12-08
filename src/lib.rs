@@ -13,6 +13,7 @@ mod day04;
 mod day05;
 mod day06;
 mod day07;
+mod day08;
 mod djikstra;
 mod parsers;
 
@@ -95,6 +96,7 @@ pub fn solve_day(day: u32, data: String, aoc: &mut Aoc, submit: Option<Part>) ->
         5 => solve::<day05::Solver>(data, aoc, submit),
         6 => solve::<day06::Solver>(data, aoc, submit),
         7 => solve::<day07::Solver>(data, aoc, submit),
+        8 => solve::<day08::Solver>(data, aoc, submit),
         _ => Err(failure::err_msg(format!("Invalid day {}", day))),
     }
 }
