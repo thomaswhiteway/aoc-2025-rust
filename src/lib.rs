@@ -3,6 +3,7 @@ use failure::Error;
 use std::fs::read_to_string;
 use std::path::Path;
 use std::str::FromStr;
+use std::time::{Duration, Instant};
 
 mod a_star;
 mod common;
@@ -62,9 +63,36 @@ fn display_solution(part: usize, solution: &str) {
     }
 }
 
+enum TimeUnit {
+    Microseconds,
+    Milliseconds,
+    Seconds,
+}
+
+impl TimeUnit {
+    fn name(&self) -> &'static str {
+        match self {
+            TimeUnit::Microseconds => "µs",
+            TimeUnit::Milliseconds => "ms",
+            TimeUnit::Seconds => "s",
+        }
+    }
+
+    fn from_duration(&self, duration: Duration) -> u128 {
+        match self {
+            TimeUnit::Microseconds => duration.as_micros(),
+            TimeUnit::Milliseconds => duration.as_millis(),
+            TimeUnit::Seconds => duration.as_secs() as u128,
+        }
+    }
+}
+
 pub fn solve<S: Solver>(data: String, aoc: &mut Aoc, submit: Option<Part>) -> Result<(), Error> {
+    let start = Instant::now();
     let problem = S::parse_input(data)?;
+    let start_solve = Instant::now();
     let (part_one, part_two) = S::solve(problem);
+    let complete = Instant::now();
 
     if let Some(solution) = part_one {
         display_solution(1, &solution);
@@ -83,6 +111,26 @@ pub fn solve<S: Solver>(data: String, aoc: &mut Aoc, submit: Option<Part>) -> Re
             println!("{}", outcome);
         }
     }
+
+    let parse_time = start_solve - start;
+    let solve_time = complete - start_solve;
+    let total_time = complete - start;
+    let unit = if total_time.as_millis() < 3 {
+        TimeUnit::Microseconds
+    } else if total_time.as_secs() < 3 {
+        TimeUnit::Milliseconds
+    } else {
+        TimeUnit::Seconds
+    };
+    println!(
+        "Took {}{} ({}{} parse, {}{} solve)",
+        unit.from_duration(total_time),
+        unit.name(),
+        unit.from_duration(parse_time),
+        unit.name(),
+        unit.from_duration(solve_time),
+        unit.name(),
+    );
 
     Ok(())
 }

@@ -78,7 +78,11 @@ impl Circuits {
     }
 
     fn is_fully_merged(&self) -> bool {
-        self.circuits.first().map(|circuit| circuit.len()).unwrap_or_default() == self.box_circuits.len()
+        self.circuits
+            .first()
+            .map(|circuit| circuit.len())
+            .unwrap_or_default()
+            == self.box_circuits.len()
     }
 }
 pub struct Solver {}
