@@ -3,16 +3,18 @@ use failure::Error;
 use std::collections::HashSet;
 
 pub struct Rolls {
-    rolls: HashSet<Position>
+    rolls: HashSet<Position>,
 }
 
 impl Rolls {
-    fn adjacent_rolls(&self, pos: Position) -> impl Iterator<Item=Position> {
+    fn adjacent_rolls(&self, pos: Position) -> impl Iterator<Item = Position> {
         pos.surrounding().filter(|adj| self.rolls.contains(adj))
     }
 
-
-    fn reachable(&self, from: Option<&HashSet<Position>>) -> (HashSet<Position>, HashSet<Position>) {
+    fn reachable(
+        &self,
+        from: Option<&HashSet<Position>>,
+    ) -> (HashSet<Position>, HashSet<Position>) {
         let mut reachable = HashSet::new();
         let mut adjacent_to_reachable = HashSet::new();
 
@@ -23,29 +25,28 @@ impl Rolls {
             if adjacent.len() < 4 {
                 reachable.insert(pos);
                 adjacent_to_reachable.remove(&pos);
-                adjacent_to_reachable.extend(adjacent.into_iter().filter(|adj| !reachable.contains(adj)));
+                adjacent_to_reachable
+                    .extend(adjacent.into_iter().filter(|adj| !reachable.contains(adj)));
             }
-
         }
 
         (reachable, adjacent_to_reachable)
     }
 
-    fn remove_rolls(&mut self) -> impl Iterator<Item=HashSet<Position>> {
-        (0..)
-            .scan(None, |adjacent, _| {
-                let (reachable, new_adjacent) = self.reachable(adjacent.as_ref());
+    fn remove_rolls(&mut self) -> impl Iterator<Item = HashSet<Position>> {
+        (0..).scan(None, |adjacent, _| {
+            let (reachable, new_adjacent) = self.reachable(adjacent.as_ref());
 
-                if reachable.is_empty() {
-                    return None;
-                }
+            if reachable.is_empty() {
+                return None;
+            }
 
-                *adjacent = Some(new_adjacent);
+            *adjacent = Some(new_adjacent);
 
-                self.rolls.retain(|pos| !reachable.contains(pos));
-                Some(reachable)
-            })
-        }
+            self.rolls.retain(|pos| !reachable.contains(pos));
+            Some(reachable)
+        })
+    }
 }
 
 pub struct Solver {}
@@ -56,23 +57,22 @@ impl super::Solver for Solver {
     fn parse_input(data: String) -> Result<Self::Problem, Error> {
         Ok(Rolls {
             rolls: data
-            .lines()
-            .enumerate()
-            .flat_map(|(y, row)| {
-                row.chars().enumerate().filter_map(move |(x, c)| {
-                    if c == '@' {
-                        Some(Position {
-                            x: x as i64,
-                            y: y as i64,
-                        })
-                    } else {
-                        None
-                    }
+                .lines()
+                .enumerate()
+                .flat_map(|(y, row)| {
+                    row.chars().enumerate().filter_map(move |(x, c)| {
+                        if c == '@' {
+                            Some(Position {
+                                x: x as i64,
+                                y: y as i64,
+                            })
+                        } else {
+                            None
+                        }
+                    })
                 })
-            })
-            .collect()
-        }
-        )
+                .collect(),
+        })
     }
 
     fn solve(mut rolls: Self::Problem) -> (Option<String>, Option<String>) {

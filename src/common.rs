@@ -57,14 +57,14 @@ impl Position {
 
     pub fn direction_to(self, other: Self) -> Direction {
         match (other.x - self.x, other.y - self.y) {
-            (0, dy) if dy < 0 => Direction::North,
-            (dx, dy) if dx > 0 && dy < 0 => Direction::NorthEast,
+            (0, dy) if dy > 0 => Direction::North,
+            (dx, dy) if dx > 0 && dy > 0 => Direction::NorthEast,
             (dx, 0) if dx > 0 => Direction::East,
-            (dx, dy) if dx > 0 && dy > 0 => Direction::SouthEast,
-            (0, dy) if dy > 0 => Direction::South,
-            (dx, dy) if dx < 0 && dy > 0 => Direction::SouthWest,
+            (dx, dy) if dx > 0 && dy < 0 => Direction::SouthEast,
+            (0, dy) if dy < 0 => Direction::South,
+            (dx, dy) if dx < 0 && dy < 0 => Direction::SouthWest,
             (dx, 0) if dx < 0 => Direction::West,
-            (dx, dy) if dx < 0 && dy < 0 => Direction::NorthWest,
+            (dx, dy) if dx < 0 && dy > 0 => Direction::NorthWest,
             _ => unreachable!(),
         }
     }
@@ -217,14 +217,14 @@ impl Direction {
     pub fn offset(self) -> Position {
         use Direction::*;
         match self {
-            North => Position { x: 0, y: -1 },
-            NorthEast => Position { x: 1, y: -1 },
+            North => Position { x: 0, y: 1 },
+            NorthEast => Position { x: 1, y: 1 },
             East => Position { x: 1, y: 0 },
-            SouthEast => Position { x: 1, y: 1 },
-            South => Position { x: 0, y: 1 },
-            SouthWest => Position { x: -1, y: 1 },
+            SouthEast => Position { x: 1, y: -1 },
+            South => Position { x: 0, y: -1 },
+            SouthWest => Position { x: -1, y: -1 },
             West => Position { x: -1, y: 0 },
-            NorthWest => Position { x: -1, y: -1 },
+            NorthWest => Position { x: -1, y: 1 },
         }
     }
 
@@ -282,6 +282,28 @@ impl Direction {
             West => vec![West].into_iter(),
             NorthWest => vec![North, West].into_iter(),
         }
+    }
+
+    pub fn bearing(self) -> i64 {
+        use Direction::*;
+        match self {
+            North => 0,
+            NorthEast => 45,
+            East => 90,
+            SouthEast => 135,
+            South => 180,
+            SouthWest => 225,
+            West => 270,
+            NorthWest => 315,
+        }
+    }
+
+    pub fn angle_to(self, other: Direction) -> i64 {
+        let mut angle = other.bearing() - self.bearing();
+        if angle < 0 {
+            angle += 360
+        }
+        angle
     }
 }
 
@@ -365,5 +387,16 @@ impl<T: Hash + Eq> IntoIterator for Counter<T> {
     type Item = (T, usize);
     fn into_iter(self) -> Self::IntoIter {
         self.counts.into_iter()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_angle() {
+        use super::Direction::*;
+        assert_eq!(NorthEast.angle_to(NorthWest), 270);
+        assert_eq!(NorthWest.angle_to(NorthEast), 90);
+        assert_eq!(South.angle_to(East), 270);
     }
 }
